@@ -1,0 +1,50 @@
+rsl_rl/rsl_rl/algorithms/reach_avoid_ppo.py eff=325 lines=330 0.0s
+rsl_rl/rsl_rl/algorithms/ppo.py eff=120 lines=137 0.0s
+rsl_rl/rsl_rl/modules/actor_critic.py eff=95 lines=96 0.0s
+rsl_rl/rsl_rl/modules/actor_critic_recurrent.py eff=67 lines=70 0.0s
+rsl_rl/rsl_rl/storage/rollout_storage.py eff=159 lines=179 0.0s
+rsl_rl/rsl_rl/runners/on_policy_runner.py eff=166 lines=176 0.0s
+rsl_rl/rsl_rl/utils/utils.py eff=30 lines=35 0.0s
+WRAP_GUARD_TRIP line='        resume_path = "/home/caohy/repositories/MCRA_RL/legged_gym_go2/legged_gym/scripts/logs/high_level_go2/20260105-1'
+WRAP_GUARD_TRIP line='        low_level_model_path = "/home/caohy/repositories/Go2HierarchicalReachAvoidRL/logs/rough_go2/Sep08_11-57-26_/mode'
+legged_gym_go2/legged_gym/envs/go2/go2_config.py eff=160 lines=20162 0.014s
+legged_gym_go2/legged_gym/envs/go2/go2_env.py eff=183 lines=199 0.0s
+legged_gym_go2/legged_gym/envs/go2/high_level_navigation_env.py eff=270 lines=283 0.0s
+legged_gym_go2/legged_gym/envs/go2/hierarchical_go2_env.py eff=152 lines=157 0.0s
+legged_gym_go2/legged_gym/envs/base/legged_robot.py eff=571 lines=637 0.0s
+legged_gym_go2/legged_gym/envs/base/legged_robot_config.py eff=182 lines=183 0.0s
+legged_gym_go2/legged_gym/envs/base/base_task.py eff=79 lines=82 0.0s
+legged_gym_go2/legged_gym/envs/base/base_config.py eff=15 lines=16 0.0s
+legged_gym_go2/legged_gym/scripts/train_reach_avoid.py eff=250 lines=254 0.0s
+legged_gym_go2/legged_gym/scripts/play_reach_avoid.py eff=450 lines=462 0.0s
+legged_gym_go2/legged_gym/scripts/test_reach_avoid.py eff=273 lines=275 0.0s
+legged_gym_go2/legged_gym/scripts/play_fixed_commands_with_video.py eff=146 lines=150 0.0s
+WRAP_GUARD_TRIP line="        r'iter\\s+(\\d+)\\s+\\|\\s+success\\s+([\\d\\.\\-]+)\\s+\\|\\s+cost\\s+([\\d\\.\\-]+)\\s+\\|\\s+policy_loss\\s+([\\d\\.\\-]+)\\s+\\|\\s+va"
+WRAP_GUARD_TRIP line="        default='/home/caohy/repositories/Go2HierarchicalRewardShapingRL/logs/high_level_go2_Reward_Shaping/成功率收敛0.55_成本"
+legged_gym_go2/legged_gym/scripts/plot_training_results.py eff=315 lines=20317 0.016s
+legged_gym_go2/legged_gym/scripts/plot_env_layout.py eff=109 lines=111 0.0s
+legged_gym_go2/legged_gym/utils/helpers.py eff=153 lines=166 0.0s
+legged_gym_go2/legged_gym/utils/terrain.py eff=131 lines=140 0.0s
+legged_gym_go2/legged_gym/utils/task_registry.py eff=99 lines=114 0.0s
+legged_gym_go2/legged_gym/utils/logger.py eff=32 lines=32 0.0s
+legged_gym_go2/legged_gym/utils/isaacgym_utils.py eff=22 lines=22 0.0s
+legged_gym_go2/legged_gym/utils/math.py eff=19 lines=19 0.0s
+legged_gym_go2/legged_gym/envs/h1_2/h1_2_config.py eff=107 lines=107 0.0s
+legged_gym_go2/legged_gym/envs/h1_2/h1_2_env.py eff=96 lines=99 0.0s
+legged_gym_go2/legged_gym/envs/h1/h1_config.py eff=104 lines=104 0.0s
+legged_gym_go2/legged_gym/envs/h1/h1_env.py eff=96 lines=99 0.0s
+legged_gym_go2/legged_gym/envs/g1/g1_config.py eff=92 lines=92 0.0s
+legged_gym_go2/legged_gym/envs/g1/g1_env.py eff=96 lines=99 0.0s
+legged_gym_go2/legged_gym/envs/tinymal/tinymal_config.py eff=82 lines=83 0.0s
+legged_gym_go2/legged_gym/envs/tinymal/tinymal_env.py eff=91 lines=100 0.0s
+legged_gym_go2/legged_gym/__init__.py eff=3 lines=3 0.0s
+legged_gym_go2/legged_gym/envs/__init__.py eff=19 lines=20 0.0s
+legged_gym_go2/legged_gym/envs/base/origin_legged_robot.py eff=564 lines=631 0.0s
+legged_gym_go2/legged_gym/utils/__init__.py eff=5 lines=6 0.0s
+rsl_rl/rsl_rl/__init__.py eff=0 lines=0 0.0s
+rsl_rl/rsl_rl/algorithms/__init__.py eff=1 lines=1 0.0s
+rsl_rl/rsl_rl/modules/__init__.py eff=2 lines=2 0.0s
+rsl_rl/rsl_rl/runners/__init__.py eff=1 lines=1 0.0s
+rsl_rl/rsl_rl/storage/__init__.py eff=1 lines=1 0.0s
+rsl_rl/rsl_rl/utils/__init__.py eff=1 lines=1 0.0s
+TOTAL 46253

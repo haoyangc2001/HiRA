@@ -15,3 +15,4 @@ legged_gym_go2/legged_gym/scripts/logs/high_level_go2/
 change-list.txt
 AGENTS.md
 .playwright-cli/
+.workbuddy/

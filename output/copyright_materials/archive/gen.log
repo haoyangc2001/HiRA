@@ -1,0 +1,16 @@
+[3] source.html pages=60 taken=3000
+[4] form.html written
+[5] manual.html pages=15
+[6] printing source pdf...
+   src ok= True
+[7] printing form pdf...
+   form ok= True
+[8] printing manual pdf...
+   man ok= True
+EFF_TOTAL 6263
+SRC_PAGES 60 TAKEN 3000
+MAN_PAGES 15
+SRC_PDF 1154466
+FORM_PDF 504909
+MAN_PDF 1128060
+EXIT=0

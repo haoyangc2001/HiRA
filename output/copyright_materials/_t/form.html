@@ -1,0 +1,22 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<style>
+@page{size:A4;margin:15mm}
+body{font-family:"SimSun",serif;color:#000;font-size:11pt}
+h1{font-family:"SimHei",sans-serif;text-align:center;font-size:16pt;margin-bottom:8mm}
+table{border-collapse:collapse;width:100%}
+td{border:1px solid #000;padding:3mm 4mm;vertical-align:top}
+.k{font-weight:bold;width:30%;background:#eee;font-family:"SimHei",sans-serif}
+.v{width:70%}
+.sec{font-family:"SimHei",sans-serif;font-weight:bold;margin:8mm 0 3mm;font-size:13pt}
+.p{text-indent:2em;line-height:1.8;margin:2mm 0}
+</style></head><body>
+<h1>四足机器人分层安全导航强化学习训练平台 V1.0.0　软件著作权登记申请表（字段信息）</h1>
+<table><tr><td class='k'>软件全称</td><td class='v'>四足机器人分层安全导航强化学习训练平台</td></tr><tr><td class='k'>软件简称</td><td class='v'>（无）</td></tr><tr><td class='k'>版本号</td><td class='v'>V1.0.0</td></tr><tr><td class='k'>权利取得方式</td><td class='v'>原始取得</td></tr><tr><td class='k'>权利范围</td><td class='v'>全部权利</td></tr><tr><td class='k'>开发完成日期</td><td class='v'>2026-08-02（以最新提交为准，待人工确认）</td></tr><tr><td class='k'>发表状态</td><td class='v'>未发表（本项目以 GitHub 项目页形式展示，未作为软件产品公开发表）</td></tr><tr><td class='k'>开发方式</td><td class='v'>单独开发</td></tr><tr><td class='k'>硬件环境（开发）</td><td class='v'>x86_64 兼容计算机；NVIDIA GPU（训练用，显存≥16GB）；内存≥32GB；磁盘≥100GB</td></tr><tr><td class='k'>硬件环境（运行）</td><td class='v'>Unitree Go2 四足机器人本体及机载算力，或在同等配置的主机上进行 Isaac Gym 仿真</td></tr><tr><td class='k'>软件环境（开发）</td><td class='v'>Ubuntu 20.04/22.04；Python 3.8+；PyTorch 1.13+；CUDA 11.7；Isaac Gym Preview 4；rsl_rl；legged_gym</td></tr><tr><td class='k'>软件环境（运行）</td><td class='v'>同开发环境；实机部署需 Unitree SDK 与机载 Linux</td></tr><tr><td class='k'>编程语言</td><td class='v'>Python</td></tr><tr><td class='k'>源程序量</td><td class='v'>共 6263 行有效代码（已去除注释与空行；取自研目录 legged_gym_go2/legged_gym, rsl_rl/rsl_rl）</td></tr><tr><td class='k'>著作权人姓名</td><td class='v'>曹豪洋</td></tr><tr><td class='k'>著作权人类别</td><td class='v'>自然人</td></tr><tr><td class='k'>证件类型</td><td class='v'>居民身份证（号码待人工确认，不在材料中写明）</td></tr><tr><td class='k'>国籍</td><td class='v'>中国</td></tr><tr><td class='k'>省/市</td><td class='v'>广东省深圳市（待人工确认）</td></tr><tr><td class='k'>权利取得方式（详）</td><td class='v'>原始取得（由著作权人独立创作完成）</td></tr><tr><td class='k'>申请的软件用途</td><td class='v'>用于四足机器人安全自主导航的分层强化学习训练、仿真评测与算法研究</td></tr></table>
+<div class="sec">主要功能（约700字）</div>
+<p class="p">本软件是一套面向 Unitree Go2 四足机器人的分层安全导航强化学习训练系统。系统将导航任务建模为“到达—避障”（Reach-Avoid）约束问题：在抵达目标点的同时，须满足与障碍物、场地边界保持安全距离的硬约束。系统采用分层架构，下层为冻结的运动控制策略，将高维关节力矩控制抽象为速度命令接口；上层策略仅输出线速度、侧向速度与偏航角速度三类速度命令，从而大幅降低决策维度、提升训练样本效率并保证底层运动的安全性。主要功能包括：一、构建基于 Isaac Gym 的四足仿真环境，支持出生点与朝向随机化、障碍物与场地边界的安全指标计算（avoid_metric 与 reach_metric）；二、构造高层观测空间（含目标与障碍/边界的激光雷达分箱特征，共 40 维），并将安全指标转换为到达代价 g(s) 与安全约束 h(s)；三、实现 Reach-Avoid PPO 训练算法，以 g(s)/h(s) 经广义优势估计（GAE）合成价值目标，训练高层策略；四、提供训练主循环（含成功率与执行成本统计、断点续训）、可视化回放与轨迹导出评测脚本；五、提供项目展示网页，汇总算法原理、训练曲线与演示。系统已在实际训练中使导航成功率由 0.014 提升至 0.691，执行成本收敛至约 79 步，验证了分层安全导航方案的有效性。</p>
+<div class="sec">技术特点</div>
+<p class="p">技术特点：1）分层抽象——冻结低层运动策略，仅训练高层速度命令策略，兼顾安全性与样本效率；2）约束建模——以到达代价 g(s) 与安全约束 h(s) 显式表达 Reach-Avoid 目标，区别于普通奖励最大化；3）安全度量——在底层环境中实时计算 avoid_metric/reach_metric，作为约束信号反馈给上层；4）算法实现——基于 rsl_rl 的 PPO 框架扩展 Reach-Avoid GAE 与专用回放缓冲，策略网络为多层感知机（512×4）加对角高斯动作分布；5）可复现——训练、回放、评测脚本齐全，关键超参集中于配置类，便于复现与消融；6）仿真到实机——环境接口与 Unitree Go2 一致，支持向实机策略部署迁移。</p>
+<div class="sec">说明</div>
+<p class="p">以上字段依据项目真实源码与文档整理，供登录 register.ccopyright.com.cn 后照抄填入网页表单。"
+"软件全称不含版本号，版本号单独填写；版本号在申请表、源代码页眉、操作手册页眉三处须保持一致。</p>
+</body></html>
