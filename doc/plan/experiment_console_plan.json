@@ -1,0 +1,891 @@
+{
+  "document": {
+    "name": "独立训练控制台前后端设计与实现计划",
+    "version": "1.0.0",
+    "created_at": "2026-09-18",
+    "source_plan": "基于仓库现状与前序讨论形成的独立训练配置、训练监控、轨迹/视频回放和策略导出方案。",
+    "status_definition": {
+      "false": "任务尚未完成、尚未通过验收或正在等待用户确认",
+      "true": "任务已完成、验证通过并记录了可复核证据"
+    },
+    "update_rule": "每次执行任务时先追加工作记录和验证结果，再将状态改为 true；历史工作记录只追加不覆盖。"
+  },
+  "background": {
+    "business_context": "项目已有 Isaac Gym Go2 分层导航训练代码、Reach-Avoid PPO、高层 checkpoint、训练日志、视频和轨迹采集脚本，但现有 webui 主要是静态项目介绍页，不承担实验控制职责。",
+    "current_capability": "仓库可以通过现有 Python 脚本完成高层 Reach-Avoid 训练、回放、轨迹采集和 TorchScript 策略导出；训练日志主要写入 training.log，checkpoint 主要保存为 model_*.pt 或 model_final.pt。",
+    "problem_to_solve": "需要一个与现有 webui 完全隔离的简单实验控制台，用于配置训练、查看训练状态和指标、播放已有视频、回放二维轨迹，并导出策略文件，同时不能侵入或改动现有训练代码和已有产物。"
+  },
+  "goal": {
+    "primary": "在新目录 training_console/ 中设计并实现一个独立的前后端实验控制台，不修改任何已有代码，不运行本地 Isaac Gym 训练或实验。",
+    "success_equation": "独立目录中的前端可完成配置、训练控制、指标查看、视频/二维轨迹回放和策略导出交互；后端仅通过适配器读取现有产物或启动现有脚本；静态检查和接口契约验证通过；原有目录与文件内容保持不变。",
+    "deliverables": [
+      "doc/plan/experiment_console_plan.json",
+      "training_console/README.md",
+      "training_console/backend/ 的 FastAPI 接口与现有仓库适配层",
+      "training_console/frontend/ 的训练控制台页面、配置表单、指标面板和回放界面",
+      "training_console/configs/ 的配置预设和字段说明",
+      "training_console/exports/ 的导出文件隔离目录设计",
+      "静态验证记录、接口契约说明和不侵入边界说明"
+    ]
+  },
+  "scope": {
+    "included": [
+      "新建 training_console/ 目录并在其中存放全部前后端代码、配置、说明和导出结果",
+      "使用 FastAPI 作为轻量后端候选，使用原生 HTML/CSS/JavaScript 作为第一版前端候选",
+      "训练参数配置、预设保存、配置校验和配置预览",
+      "通过子进程适配现有 train_reach_avoid.py 的启动、状态、停止和日志读取",
+      "解析现有 training.log 和 checkpoint 元数据",
+      "播放已有 MP4 视频和使用轨迹 JSON 进行 Canvas 二维回放",
+      "调用或复用现有策略导出能力，将导出结果写入 training_console/exports/",
+      "接口、数据模型、页面交互、异常状态、静态测试和文档设计"
+    ],
+    "excluded": [
+      "修改 legged_gym_go2/、rsl_rl/、unitree_rl_gym/、isaacgym/ 或现有 webui/ 中的任何代码",
+      "修改或重写已有 logs/、output/、checkpoint、视频或轨迹文件",
+      "在本地启动 Isaac Gym、CUDA、训练、评估或真实机器人部署实验",
+      "实现 Isaac Gym 实时三维画面、远程 GPU 集群调度、多用户权限和生产部署",
+      "替换现有 PPO、Reach-Avoid GAE、环境动力学或训练语义",
+      "默认把障碍物和目标几何参数直接写回现有 Python 配置；第一版只做预设展示或新目录适配",
+      "自动推送远程仓库、发布服务或引入收费外部 API"
+    ]
+  },
+  "global_constraints": [
+    "所有实现文件必须位于 training_console/ 或本计划文件所在的 doc/plan/ 下。",
+    "不得修改任何已有代码、配置、日志、checkpoint、视频、轨迹和现有 webui 文件；如发现必须修改才能实现，暂停并向用户说明。",
+    "现有仓库数据只能按只读方式扫描和解析；导出结果必须写入 training_console/exports/，不得覆盖 logs/ 中文件。",
+    "不运行 Isaac Gym、CUDA、真实训练、评估、机器人部署或任何需要本地实验环境的流程；只做静态检查、单元级数据解析验证、接口契约验证和前端静态验证。",
+    "不新增未获确认的核心依赖、外部服务、远程写操作或费用；依赖选择必须记录在任务工作记录中。",
+    "训练停止、进程清理、文件访问和路径解析必须有安全边界，禁止接受任意 shell 字符串并直接执行。",
+    "所有用户可见错误必须能区分参数错误、文件不存在、训练进程失败和基础设施不可用。",
+    "计划执行时遇到影响范围、数据语义、已有产物、依赖或验收口径的不确定决策，必须暂停并询问用户。"
+  ],
+  "uncertainty_policy": {
+    "rule": "先记录已确认事实，再说明不确定点、可选方案及影响；未得到用户确认前保持相关任务为 false，不实现有争议的方案。遇到影响范围的未知情况必须 pause and ask the user。",
+    "must_pause_and_ask": [
+      "TASK-002：确认第一版是否采用 FastAPI + 原生 HTML/CSS/JavaScript，还是改用 React/Vue 等前端框架。默认方案是 FastAPI + 原生前端，影响是依赖数量、目录结构和构建流程。",
+      "TASK-002：确认‘导出’的主对象是高层导航策略、低层 locomotion 策略，还是两者都支持。默认先支持高层策略，并保留低层策略路径展示，影响导出接口和模型加载适配器。",
+      "TASK-006：确认训练配置是否只覆盖现有命令行可覆盖字段，还是允许通过新目录生成独立配置副本。默认只覆盖安全的训练运行参数，避免侵入现有配置语义。",
+      "TASK-007：确认停止训练时是否允许终止子进程树。默认允许停止由控制台启动且归属于当前会话的进程，禁止终止外部启动的训练进程。",
+      "TASK-009：确认二维轨迹 JSON 的来源是否仅限 test_reach_avoid.py 产物。默认只适配现有轨迹格式，无法识别的格式显示明确错误。"
+    ],
+    "question_format": "说明任务 ID、已确认事实、不确定点、可选方案、各方案影响和需要用户选择的结论。"
+  },
+  "paths": {
+    "plan": "doc/plan/experiment_console_plan.json",
+    "new_root": "training_console/",
+    "new_backend": "training_console/backend/",
+    "new_frontend": "training_console/frontend/",
+    "new_configs": "training_console/configs/",
+    "new_exports": "training_console/exports/",
+    "existing_training_entry": "legged_gym_go2/legged_gym/scripts/train_reach_avoid.py",
+    "existing_play_entry": "legged_gym_go2/legged_gym/scripts/play_reach_avoid.py",
+    "existing_eval_entry": "legged_gym_go2/legged_gym/scripts/test_reach_avoid.py",
+    "existing_export_helper": "legged_gym_go2/legged_gym/utils/helpers.py",
+    "existing_logs": "logs/",
+    "existing_project_webui": "webui/"
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "goal": "完成现有仓库产物、入口脚本和不侵入边界的只读基线盘点。",
+      "status": true,
+      "depends_on": [],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:00:00+08:00",
+          "summary": "完成现有训练、回放、轨迹、日志、checkpoint、视频和导出入口的只读盘点。",
+          "actions": [
+            "读取 train_reach_avoid.py、play_reach_avoid.py、test_reach_avoid.py 和 helpers.py 的入口与输出约定。",
+            "创建 experiment_console/docs/baseline.md 记录输入来源、观察到的数据契约、非侵入边界和已知未知项。",
+            "确认不启动 Isaac Gym、CUDA、训练、评估或机器人部署。"
+          ],
+          "files_changed": [
+            "experiment_console/docs/baseline.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "rg -n \"train_reach_avoid|model_final|training.log|trajectories|export_policy_as_jit|video\" ...",
+            "git diff --name-only",
+            "git status --short --untracked-files=all"
+          ],
+          "results": [
+            "确认训练日志路径模式为 logs/**/training.log，checkpoint 为 model_*.pt/model_final.pt。",
+            "确认轨迹 JSON 包含 checkpoint_path、num_trajs、max_steps、low_level_model、trajectories。",
+            "确认现有代码目录和 webui 未被修改。"
+          ],
+          "evidence": [
+            "experiment_console/docs/baseline.md 已列出入口、字段、资源来源和不侵入边界。",
+            "git diff --name-only 未显示已有跟踪文件改动。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "只读取现有文件和目录，不启动 Python 训练、Isaac Gym 或任何实验。",
+        "重点确认训练入口、回放入口、轨迹输出格式、checkpoint 键结构、视频位置和日志字段。",
+        "盘点结果写入新目录设计文档或 training_console/README.md，不修改原有说明。"
+      ],
+      "acceptance_criteria": [
+        "列出可读取的训练日志、checkpoint、视频和轨迹来源及其路径模式。",
+        "列出可调用的现有脚本和禁止直接改动的原有模块。",
+        "形成明确的不侵入边界清单，并记录无法确认的事实。"
+      ],
+      "verification_result": "基线文档已创建；入口和资源契约已通过只读检索确认；没有运行实验且已有代码文件未被修改。"
+    },
+    {
+      "id": "TASK-002",
+      "goal": "确定独立控制台的技术路线、导出范围、配置边界和进程生命周期规则。",
+      "status": true,
+      "depends_on": [
+        "TASK-001"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:05:00+08:00",
+          "summary": "确认并记录独立控制台的技术路线、导出对象、配置字段和进程所有权规则。",
+          "actions": [
+            "按用户确认采用 FastAPI + 原生 HTML/CSS/JavaScript。",
+            "将高层导航策略作为第一版导出对象，低层策略仅作为依赖展示。",
+            "将配置范围限定为现有安全命令行覆盖字段，并禁止控制台接管外部训练进程。",
+            "创建 experiment_console/docs/architecture.md。"
+          ],
+          "files_changed": [
+            "experiment_console/docs/architecture.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "Get-Content doc/plan/experiment_console_plan.json",
+            "Get-Content experiment_console/docs/architecture.md"
+          ],
+          "results": [
+            "技术栈、导出范围、配置边界和进程生命周期均已形成明确决策。",
+            "已确定 mock/static mode、read-only repository mode 和训练子进程 mode 的边界。"
+          ],
+          "evidence": [
+            "experiment_console/docs/architecture.md 的 Confirmed Decisions 和 Security Rules。",
+            "用户已明确回复全部接受计划中的待确认选项。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "默认候选为 FastAPI + 原生 HTML/CSS/JavaScript，但在实现前必须完成用户确认门。",
+        "不能因为前端方便而复制、改写或导入现有训练代码。",
+        "将高层策略导出作为默认对象；若用户选择同时支持低层策略，必须扩展数据契约。"
+      ],
+      "acceptance_criteria": [
+        "记录前端框架、后端框架、开发启动方式和依赖策略。",
+        "记录高层/低层策略导出的明确范围。",
+        "记录允许停止的进程边界、路径安全策略和配置覆盖范围。",
+        "所有影响范围的未决项均已确认或明确标记为后续阻塞点。"
+      ],
+      "verification_result": "技术路线、导出对象、配置字段、进程所有权和安全规则均已记录并获得用户确认。"
+    },
+    {
+      "id": "TASK-003",
+      "goal": "设计实验、指标、轨迹、视频、checkpoint 和错误状态的数据契约。",
+      "status": true,
+      "depends_on": [
+        "TASK-002"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:10:00+08:00",
+          "summary": "完成实验控制台的 run、metric、checkpoint、trajectory、video、export、process 和 error 契约。",
+          "actions": [
+            "定义 training.log 指标字段、缺失值策略和 iteration 排序约定。",
+            "定义 test_reach_avoid.py 轨迹 JSON 的归一化格式和 XY 坐标约定。",
+            "定义视频、导出任务、进程状态和统一错误响应。",
+            "创建 experiment_console/docs/contracts.md。"
+          ],
+          "files_changed": [
+            "experiment_console/docs/contracts.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "Get-Content experiment_console/docs/contracts.md",
+            "rg -n \"iter|trajectories|output_path|category\" experiment_console/docs/contracts.md"
+          ],
+          "results": [
+            "契约包含 run、metric、checkpoint、trajectory、video、export 和 error 七类对象。",
+            "错误分类固定为 validation、not_found、conflict、process、parse、unsupported、security 和 infrastructure。",
+            "缺失指标和缺失几何信息均采用显式 null/状态，不在浏览器端猜测。"
+          ],
+          "evidence": [
+            "experiment_console/docs/contracts.md 已提供 JSON 示例和字段规则。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "数据契约必须适配现有文件，而不是要求现有训练脚本修改输出格式。",
+        "所有路径由后端根据受控根目录解析，前端不能提交任意文件系统路径作为执行目标。",
+        "指标字段至少覆盖 iteration、success_rate、execution_cost、policy_loss、value_loss、Vmean、VexpVar 和 adv_std。"
+      ],
+      "acceptance_criteria": [
+        "定义 run、checkpoint、metric、trajectory、video、export 和 process 状态的数据结构。",
+        "定义 training.log 的字段解析规则、缺失字段策略和排序规则。",
+        "定义轨迹 JSON 的输入格式、二维坐标约定、终止状态和成功/失败状态映射。",
+        "定义所有接口的错误响应结构和前端可显示的错误分类。"
+      ],
+      "verification_result": "数据契约文档已完成，覆盖现有日志、checkpoint、轨迹和视频输入，并定义了统一错误结构。"
+    },
+    {
+      "id": "TASK-004",
+      "goal": "设计后端目录、服务边界和只读资源注册机制。",
+      "status": true,
+      "depends_on": [
+        "TASK-003"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:15:00+08:00",
+          "summary": "完成 FastAPI 后端模块边界、API 分组、资源根目录和进程安全设计。",
+          "actions": [
+            "定义 app、settings、models、errors、file_registry、parsers、process_manager、adapters 和 services 的职责。",
+            "定义 runs、metrics、replay、training、config 和 export API 分组。",
+            "定义 repository/logs/media/trajectory/console 受控根目录与路径遍历防护。",
+            "创建 experiment_console/docs/backend-design.md。"
+          ],
+          "files_changed": [
+            "experiment_console/docs/backend-design.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "Get-Content experiment_console/docs/backend-design.md",
+            "python C:\\Users\\smile\\.codex\\skills\\create-plan-worklog\\scripts\\validate_worklog.py doc/plan/experiment_console_plan.json --mode update"
+          ],
+          "results": [
+            "后端模块边界和 API 路由已明确。",
+            "文件访问要求规范化路径、根目录白名单、扩展名白名单和 symlink 越界拒绝。",
+            "训练进程要求 shell=False、参数数组和控制台所有权记录。"
+          ],
+          "evidence": [
+            "experiment_console/docs/backend-design.md 已包含模块、路由、资源根和静态验证策略。",
+            "计划校验器在 update 模式通过。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "后端只负责 API、进程管理、解析和适配，不承担机器人环境逻辑。",
+        "资源扫描必须限制在配置的 logs、videos、trajectories 和 training_console/exports 根目录。",
+        "不要在后端导入或修改现有 legged_gym、rsl_rl 模块，除非用户后续明确批准且能证明不侵入。"
+      ],
+      "acceptance_criteria": [
+        "确定 backend/app.py、process_manager.py、parsers.py、file_registry.py、models.py 等模块职责。",
+        "定义 API 路由：runs、metrics、trajectories、videos、train start/status/stop/logs、export。",
+        "定义进程状态机和子进程生命周期，包括启动失败、退出码、超时和清理。",
+        "定义路径白名单、文件类型白名单和下载响应策略。"
+      ],
+      "verification_result": "后端设计已完成，模块职责、路由、资源白名单、进程生命周期和静态验证策略均已记录。"
+    },
+    {
+      "id": "TASK-005",
+      "goal": "设计前端信息架构、页面状态和核心交互组件。",
+      "status": true,
+      "depends_on": [
+        "TASK-003"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:20:00+08:00",
+          "summary": "完成独立单页控制台的训练、回放、导出信息架构和状态设计。",
+          "actions": [
+            "将控制台拆为训练、回放和导出三个分区。",
+            "定义 run、配置、指标、视频、Canvas 和导出组件的空/加载/成功/失败状态。",
+            "定义桌面双列、移动单列、语义状态色和异步交互规则。",
+            "创建 experiment_console/docs/frontend-design.md。"
+          ],
+          "files_changed": [
+            "experiment_console/docs/frontend-design.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "Get-Content experiment_console/docs/frontend-design.md"
+          ],
+          "results": [
+            "前端不复用 webui/，采用独立单页控制台信息架构。",
+            "所有核心交互均定义了空、加载、成功和失败表现。",
+            "回放支持视频与二维 Canvas 两条路径，训练和导出均有忙碌状态。"
+          ],
+          "evidence": [
+            "experiment_console/docs/frontend-design.md 已记录导航、状态、布局和交互规则。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "前端存放在 training_console/frontend/，不复用或覆盖 webui/。",
+        "第一版采用单页控制台加分区切换，避免引入复杂路由和构建系统。",
+        "所有按钮需要有禁用、加载、成功和失败状态；移动端不要求完整三维画面。"
+      ],
+      "acceptance_criteria": [
+        "定义训练、回放、导出三个主要分区及其导航关系。",
+        "定义训练状态卡、指标图表、日志面板、配置表单、视频播放器和 Canvas 回放器。",
+        "定义空状态、无数据、运行中、完成、失败和权限/路径错误的界面表现。",
+        "形成桌面端和移动端的最小布局规范，确保不依赖现有 webui 样式。"
+      ],
+      "verification_result": "前端信息架构、状态模型、响应式布局和交互规则已完成，且与现有 webui 完全隔离。"
+    },
+    {
+      "id": "TASK-006",
+      "goal": "设计配置预设模型、校验规则和配置到训练参数的映射。",
+      "status": true,
+      "depends_on": [
+        "TASK-003"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:25:00+08:00",
+          "summary": "完成训练预设 schema、默认配置、字段校验和现有命令行参数映射。",
+          "actions": [
+            "创建 experiment_console/configs/schema.json。",
+            "创建保守的 experiment_console/configs/default.json。",
+            "记录 CLI 映射、路径规则、数值范围和保存隔离策略。",
+            "明确环境几何参数在第一版只作为只读描述，不写回现有 Python 配置。"
+          ],
+          "files_changed": [
+            "experiment_console/configs/schema.json",
+            "experiment_console/configs/default.json",
+            "experiment_console/configs/README.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "Get-Content experiment_console/configs/schema.json",
+            "Get-Content experiment_console/configs/default.json"
+          ],
+          "results": [
+            "schema 覆盖 task、resume、experiment_name、run_name、load_run、checkpoint、num_envs、seed、max_iterations、rl_device 和资源选择器。",
+            "默认 preset 使用 num_envs=1、max_iterations=1、rl_device=cpu，仅用于开发预览。",
+            "路径、文件名和数值范围均有明确校验规则。"
+          ],
+          "evidence": [
+            "experiment_console/configs/schema.json 可作为配置契约。",
+            "experiment_console/configs/README.md 说明映射字段和不侵入策略。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "第一版优先覆盖现有 get_args/update_cfg_from_args 支持的安全参数，例如 num_envs、seed、max_iterations、experiment_name、run_name、resume、load_run 和 checkpoint。",
+        "不直接修改 GO2HighLevelCfg、GO2HighLevelCfgPPO 或其他已有配置文件。",
+        "配置文件写入 training_console/configs/，不得写入 logs/ 或现有源码目录。"
+      ],
+      "acceptance_criteria": [
+        "定义配置 JSON schema 或等价字段说明。",
+        "定义数值范围、必填项、路径存在性和设备格式校验。",
+        "定义配置预览结果，能清楚说明哪些字段会传给现有脚本、哪些字段仅用于前端展示。",
+        "定义配置保存、复制、删除和加载失败时的行为。"
+      ],
+      "verification_result": "配置 schema、默认 preset、字段范围、资源路径和 CLI 映射均已完成并隔离在 training_console/configs/。"
+    },
+    {
+      "id": "TASK-007",
+      "goal": "设计训练启动、状态监控、停止和恢复的后端编排流程。",
+      "status": true,
+      "depends_on": [
+        "TASK-004",
+        "TASK-006"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:30:00+08:00",
+          "summary": "完成训练子进程启动、互斥、状态、停止、恢复和静态 dry-run 设计。",
+          "actions": [
+            "定义 start/status/stop/logs API 的请求和响应行为。",
+            "定义单进程互斥、控制台所有权标记、优雅停止和有界等待。",
+            "定义 resume=true 的 checkpoint/load-run 映射和 dry_run 静态验证模式。",
+            "创建 experiment_console/docs/training-orchestration.md。"
+          ],
+          "files_changed": [
+            "experiment_console/docs/training-orchestration.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "Get-Content experiment_console/docs/training-orchestration.md"
+          ],
+          "results": [
+            "训练命令要求参数数组和 shell=False，禁止任意 shell 字符串。",
+            "外部进程不会被接管或终止，重复启动返回冲突。",
+            "静态验证使用 dry_run 或安全 fixture，不执行 Isaac Gym。"
+          ],
+          "evidence": [
+            "experiment_console/docs/training-orchestration.md 已固定启动、状态、停止和恢复契约。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "只能启动由控制台创建并记录的训练子进程；不得接管或终止外部进程。",
+        "命令参数必须使用参数数组构造，禁止拼接未经校验的 shell 命令。",
+        "计划阶段不启动实际训练，只设计进程管理和静态可测试接口。"
+      ],
+      "acceptance_criteria": [
+        "定义 POST /api/train/start、GET /api/train/status、POST /api/train/stop、GET /api/train/logs 的请求和响应。",
+        "定义单任务互斥、重复启动、停止后重启、进程异常退出和 checkpoint 生成检测规则。",
+        "定义标准输出/标准错误的保存和脱敏策略。",
+        "定义恢复训练时 checkpoint 选择、路径校验和状态展示。"
+      ],
+      "verification_result": "训练编排契约已完成，包含进程所有权、互斥、停止、恢复、日志隔离和无实验环境的 dry-run 验证方案。"
+    },
+    {
+      "id": "TASK-008",
+      "goal": "设计训练日志、指标曲线和实验摘要的解析适配器。",
+      "status": true,
+      "depends_on": [
+        "TASK-003",
+        "TASK-004"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T12:45:00+08:00",
+          "summary": "完成只读 training.log 与 checkpoint 元数据解析适配器，并用固定样例验证正常、缺字段、重复迭代和损坏文件场景。",
+          "actions": [
+            "新增 experiment_console/backend/parsers.py，解析日志指标、摘要、告警、checkpoint 元数据和 actor 维度提示。",
+            "新增固定日志、checkpoint JSON 和解析器测试样例，未读取或改写训练运行时配置。",
+            "使用 CPU-only checkpoint 加载策略，并在 PyTorch 不可用或文件损坏时保留文件发现结果。"
+          ],
+          "files_changed": [
+            "experiment_console/backend/__init__.py",
+            "experiment_console/backend/parsers.py",
+            "experiment_console/tests/test_parsers.py",
+            "experiment_console/tests/fixtures/training_sample.log",
+            "experiment_console/tests/fixtures/checkpoint_metadata.json",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "python -m pytest -q experiment_console/tests/test_parsers.py",
+            "python -m py_compile experiment_console/backend/parsers.py experiment_console/tests/test_parsers.py"
+          ],
+          "results": [
+            "5 个固定样例测试通过。",
+            "日志按 iteration 排序、重复 iteration 采用最后一次记录、缺失字段返回 null、不完整尾行不导致解析失败。",
+            "checkpoint 文件在元数据不可读时仍可被发现，并返回 metadata_error。"
+          ],
+          "evidence": [
+            "pytest 输出为 5 passed。",
+            "py_compile 无错误，且未启动 Isaac Gym、CUDA 或训练进程。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "解析器只读现有 training.log 和 checkpoint 元数据，不改写源文件。",
+        "必须兼容日志末尾不完整、字段缺失、中文路径和重复 iteration 的情况。",
+        "不能以“解析成功”替代真实训练结果；没有数据时应返回空状态。"
+      ],
+      "acceptance_criteria": [
+        "能够按 iteration 排序并解析现有日志中的成功率、成本、策略损失和值损失。",
+        "能够生成当前实验摘要、最佳指标、最后指标和时间范围。",
+        "能够识别 checkpoint 文件并读取 iteration、success_rate、execution_cost 和 low_level_model_path 等元数据。",
+        "为解析器准备脱离 Isaac Gym 的固定样例和异常样例验证方案。"
+      ],
+      "verification_result": "日志指标、实验摘要和 checkpoint 适配器已实现并通过 5 个固定样例测试；支持缺字段、重复迭代、截断尾行、损坏 checkpoint 和无 PyTorch 降级。"
+    },
+    {
+      "id": "TASK-009",
+      "goal": "设计视频播放和二维轨迹 Canvas 回放流程。",
+      "status": true,
+      "depends_on": [
+        "TASK-003",
+        "TASK-005"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T13:00:00+08:00",
+          "summary": "完成受控视频发现、轨迹 JSON 归一化和原生 Canvas 播放控制器。",
+          "actions": [
+            "新增 experiment_console/backend/replay.py，限制视频扩展名并解析 test_reach_avoid.py 轨迹格式。",
+            "新增 experiment_console/frontend/replay.js，实现播放、暂停、单步、重置、速度和轨迹选择。",
+            "新增有效、非法轨迹和视频扩展名固定样例，并记录几何缺失的降级规则。"
+          ],
+          "files_changed": [
+            "experiment_console/backend/replay.py",
+            "experiment_console/frontend/replay.js",
+            "experiment_console/tests/test_replay.py",
+            "experiment_console/tests/fixtures/trajectory_sample.json",
+            "experiment_console/tests/fixtures/trajectory_invalid.json",
+            "experiment_console/docs/replay-design.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "python -m pytest -q experiment_console/tests/test_parsers.py experiment_console/tests/test_replay.py",
+            "python -m py_compile experiment_console/backend/replay.py",
+            "node --check experiment_console/frontend/replay.js"
+          ],
+          "results": [
+            "8 个固定样例测试通过。",
+            "视频发现仅返回受控根目录下的 mp4/webm/ogg，轨迹回放支持边界计算和 Canvas 帧生成。",
+            "非法坐标返回 parse 错误，缺少几何信息返回 geometry_unavailable，不猜测障碍物或目标。"
+          ],
+          "evidence": [
+            "pytest 输出为 8 passed。",
+            "Python 和 JavaScript 静态语法检查通过，未启动视频解码、Isaac Gym 或训练进程。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "视频直接以受控静态资源形式提供，不在浏览器中重新生成视频。",
+        "二维回放只适配现有 test_reach_avoid.py 生成的 trajectories JSON，不实时连接 Isaac Gym。",
+        "回放坐标、目标半径、障碍物半径和边界来自数据或受控配置，缺失时必须显示降级提示。"
+      ],
+      "acceptance_criteria": [
+        "定义视频列表、视频详情和静态资源访问接口。",
+        "定义 Canvas 轨迹绘制的数据转换、缩放、坐标轴、时间步和播放控制。",
+        "支持播放/暂停、单步、速度调整、重置、轨迹选择和成功/失败标识。",
+        "定义无视频、无轨迹、损坏 JSON 和轨迹为空时的前端表现。"
+      ],
+      "verification_result": "视频受控发现、轨迹归一化和 Canvas 播放控制器已完成；有效/非法/空数据状态均有明确处理并通过 8 个固定样例及 JavaScript 语法验证。"
+    },
+    {
+      "id": "TASK-010",
+      "goal": "设计策略 checkpoint 加载、网络结构识别和 TorchScript 导出适配。",
+      "status": true,
+      "depends_on": [
+        "TASK-004",
+        "TASK-006"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T13:15:00+08:00",
+          "summary": "完成隔离的高层导航 actor 导出适配器、导出计划、命名约束和失败清理策略。",
+          "actions": [
+            "新增 experiment_console/backend/export_adapter.py，检查 actor_critic、推断可用维度并生成受控导出计划。",
+            "将导出执行设计为注入 payload loader/exporter，支持 dry-run，避免导入现有训练模块和运行推理。",
+            "新增 export-design.md 和静态 fixture 测试，验证防覆盖、扩展名校验、manifest 和失败清理。"
+          ],
+          "files_changed": [
+            "experiment_console/backend/export_adapter.py",
+            "experiment_console/docs/export-design.md",
+            "experiment_console/tests/test_export_adapter.py",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "python -m pytest -q experiment_console/tests/test_export_adapter.py experiment_console/tests/test_parsers.py experiment_console/tests/test_replay.py",
+            "python -m py_compile experiment_console/backend/export_adapter.py"
+          ],
+          "results": [
+            "13 个固定样例测试通过。",
+            "高层 actor 是唯一导出对象，低层策略仅保留 checkpoint 依赖信息。",
+            "dry-run 不创建文件；成功导出写入独立目录和 manifest；失败仅清理本次新建目录。"
+          ],
+          "evidence": [
+            "pytest 输出为 13 passed。",
+            "静态编译通过，未执行 TorchScript 真实导出、GPU 加载、推理或 Isaac Gym。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "优先复用现有 ActorCritic 和 export_policy_as_jit 的语义，但适配逻辑必须放在 training_console/，不能改动原 helper。",
+        "导出目标默认是高层导航 Actor；所有导出文件写入 training_console/exports/。",
+        "计划阶段不加载 GPU 模型、不运行推理、不执行真实导出，只设计接口和静态验证。"
+      ],
+      "acceptance_criteria": [
+        "定义 POST /api/export 和导出任务状态/下载接口。",
+        "定义 checkpoint 键结构识别、actor hidden dims 推断和不兼容模型的错误信息。",
+        "定义输出文件命名、防覆盖、元数据记录和失败清理策略。",
+        "定义高层与低层导出范围的扩展点，但不在未确认前实现额外对象。"
+      ],
+      "verification_result": "高层导航 actor 导出适配器已完成，导出范围、checkpoint 识别、受控命名、防覆盖、manifest 和失败清理均已实现并通过 13 个固定样例验证。"
+    },
+    {
+      "id": "TASK-011",
+      "goal": "形成前后端 API 契约、适配器接口和实现顺序设计。",
+      "status": true,
+      "depends_on": [
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-009",
+        "TASK-010"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-18T13:30:00+08:00",
+          "summary": "冻结实验控制台 API 路由、错误结构、前端数据访问层和后端适配器接口。",
+          "actions": [
+            "新增 backend/interfaces.py，固定指标、回放、训练和导出 Protocol 边界。",
+            "新增 frontend/api.js，集中封装所有 API 路由和统一 ApiError。",
+            "新增 docs/api-contracts.md 和 api_samples.json，记录状态码、调用顺序和静态样例。"
+          ],
+          "files_changed": [
+            "experiment_console/backend/interfaces.py",
+            "experiment_console/frontend/api.js",
+            "experiment_console/docs/api-contracts.md",
+            "experiment_console/tests/fixtures/api_samples.json",
+            "experiment_console/tests/test_contracts.py",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "python -m pytest -q experiment_console/tests",
+            "python -m py_compile experiment_console/backend/interfaces.py",
+            "node --check experiment_console/frontend/api.js",
+            "node --check experiment_console/frontend/replay.js"
+          ],
+          "results": [
+            "15 个静态测试通过。",
+            "路由覆盖配置、训练、指标、视频、轨迹、导出和下载，错误结构与已有契约一致。",
+            "前端只提交资源 ID 和已校验字段，适配器不直接依赖现有训练模块。"
+          ],
+          "evidence": [
+            "pytest 输出为 15 passed。",
+            "Python/JavaScript 语法检查通过，未启动服务、训练、Isaac Gym 或 CUDA。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "接口契约必须先于代码实现冻结；若字段变化影响已有任务，必须追加变更记录。",
+        "适配器必须按领域拆分，训练进程、日志解析、回放资源和导出流程不得互相直接访问内部实现。",
+        "任何需要修改现有脚本的想法都必须改为新增适配层或暂停询问用户。"
+      ],
+      "acceptance_criteria": [
+        "完成 API 路由、请求、响应、错误码和状态码清单。",
+        "完成前端数据访问层和后端 adapter 接口的对应关系。",
+        "完成最小端到端调用顺序图：配置 → 启动 → 监控 → 回放 → 导出。",
+        "明确每个接口的静态样例数据和无 Isaac Gym 验证方式。"
+      ],
+      "verification_result": "API 路由、状态码、错误结构、前端 ApiClient 和后端 Protocol 已冻结，静态样例与 15 个测试通过。"
+    },
+    {
+      "id": "TASK-012",
+      "goal": "实现独立 training_console/ 的前后端基础结构和文档。",
+      "status": true,
+      "depends_on": [
+        "TASK-011"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-19T10:00:00+08:00",
+          "summary": "完成独立 experiment_console/ 前后端基础结构、配置服务、受控资源路由、dry-run 进程管理和原生单页前端。",
+          "actions": [
+            "新增 FastAPI 入口、settings、errors、models、file_registry、config_service、process_manager、services 和 API 路由骨架。",
+            "新增原生 HTML/CSS/JavaScript 单页，覆盖训练、回放、Canvas 轨迹和导出区域，并提供无服务时的 mock 降级。",
+            "补充 requirements.txt、README.md、资源 ID 隔离和受控视频/轨迹路径解析。",
+            "保留训练默认 dry-run 和显式 allow_process_start 开关，未启动现有训练入口。"
+          ],
+          "files_changed": [
+            "experiment_console/backend/",
+            "experiment_console/frontend/",
+            "experiment_console/README.md",
+            "experiment_console/requirements.txt",
+            "experiment_console/tests/test_console_structure.py",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "python -m pytest -q experiment_console/tests",
+            "python -m compileall -q experiment_console/backend",
+            "node --check experiment_console/frontend/api.js",
+            "node --check experiment_console/frontend/replay.js",
+            "node --check experiment_console/frontend/app.js"
+          ],
+          "results": [
+            "18 个静态测试通过。",
+            "后端入口在未安装 FastAPI 时仍可被静态编译；安装依赖后可创建 FastAPI 应用。",
+            "前端支持配置校验、dry-run 状态、指标空状态、视频空状态、Canvas mock 回放和导出计划状态。",
+            "前端只使用受控资源 ID，不显示可执行的服务器绝对路径。"
+          ],
+          "evidence": [
+            "pytest 输出为 18 passed。",
+            "Python compileall 和三个 JavaScript node --check 均通过。",
+            "所有新增文件位于 experiment_console/，未修改既有源码、日志、checkpoint、视频或 webui。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "只能创建 training_console/ 下的新文件，不得修改已有 Python、JavaScript、HTML、CSS、配置或 README。",
+        "实现过程不得启动现有训练或实验；可以使用固定样例、mock adapter 和本地静态数据做开发。",
+        "依赖文件必须最小化并记录安装方式，但不得强制修改仓库根环境。"
+      ],
+      "acceptance_criteria": [
+        "创建后端入口、模块骨架、数据模型、路由骨架和安全路径工具。",
+        "创建前端控制台页面、配置表单、状态面板、指标区域、回放区域和导出区域。",
+        "创建配置预设样例、API 示例和独立目录 README。",
+        "前后端均有空状态和 mock 数据降级路径，便于无 Isaac Gym 环境开发。"
+      ],
+      "verification_result": "独立前后端基础结构、配置与资源服务、dry-run 进程管理、单页前端、mock 降级和 README 已完成，并通过 18 个静态测试及 Python/JavaScript 语法检查。"
+    },
+    {
+      "id": "TASK-013",
+      "goal": "完成不侵入性、静态接口和前端交互验证。",
+      "status": true,
+      "depends_on": [
+        "TASK-012"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-19T10:30:00+08:00",
+          "summary": "完成全量静态、mock、真实只读日志/checkpoint 检查和前端 JavaScript 语法验证，并修正 PyTorch 自动加载边界。",
+          "actions": [
+            "新增 test_static_validation.py，检查目录结构、HTML 核心控件、Python AST、shell=False、真实 training.log、真实 checkpoint 文件发现和轨迹契约。",
+            "运行全部固定样例、配置安全、资源路径、导出、回放、契约和解析测试。",
+            "发现自动导入 PyTorch 可能触发原生 DLL 初始化后，将 checkpoint deserialization 改为 EXPERIMENT_CONSOLE_ENABLE_TORCH_LOAD=1 显式开关。",
+            "检查 git diff，确认既有源码、webui、logs、checkpoint 和视频没有跟踪文件改动。"
+          ],
+          "files_changed": [
+            "experiment_console/backend/parsers.py",
+            "experiment_console/docs/backend-design.md",
+            "experiment_console/README.md",
+            "experiment_console/tests/test_static_validation.py",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "python -m pytest -q experiment_console/tests",
+            "python -m compileall -q experiment_console/backend experiment_console/tests",
+            "node --check experiment_console/frontend/api.js",
+            "node --check experiment_console/frontend/replay.js",
+            "node --check experiment_console/frontend/app.js",
+            "python -c \"from experiment_console.backend.app import app; print(app is not None)\"",
+            "git diff --name-only"
+          ],
+          "results": [
+            "23 个测试通过。",
+            "真实 training.log 的 latest_iteration=1500，真实 model_1310.pt 可被发现且默认不加载 PyTorch。",
+            "Python compileall 和全部 JavaScript 语法检查通过；FastAPI 未安装时入口明确返回不可运行状态，不影响静态/mock 验证。",
+            "未启动 FastAPI 服务、Isaac Gym、CUDA、训练、评估或机器人部署。"
+          ],
+          "evidence": [
+            "pytest 输出为 23 passed。",
+            "model_1310.pt 输出 metadata_available=False，未触发 PyTorch 原生运行时。",
+            "git diff --name-only 未显示任何既有目录文件变更。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "验证不得启动 Isaac Gym、CUDA、训练、评估或机器人部署。",
+        "允许进行 Python 语法检查、类型/数据模型检查、固定日志解析测试、API mock 测试和浏览器静态交互检查。",
+        "不得为了通过测试而修改已有仓库代码或删除已有产物。"
+      ],
+      "acceptance_criteria": [
+        "新目录后端文件通过静态语法检查和数据契约校验。",
+        "固定日志、checkpoint 元数据和轨迹样例能够被解析器正确处理，异常样例返回预期错误。",
+        "前端能够在 mock 数据下展示训练状态、指标、视频/轨迹空状态和导出结果状态。",
+        "记录未运行本地实验的证据，并确认现有代码文件内容未发生变化。"
+      ],
+      "verification_result": "全量静态/mock/API 契约/前端语法验证通过，共 23 个测试；真实只读日志和 checkpoint 文件检查通过，PyTorch 加载已改为显式开关，既有代码和产物未修改。"
+    },
+    {
+      "id": "TASK-014",
+      "goal": "完成交付文档、启动说明、限制说明和后续扩展边界。",
+      "status": true,
+      "depends_on": [
+        "TASK-013"
+      ],
+      "work_records": [
+        {
+          "timestamp": "2026-09-19T11:00:00+08:00",
+          "summary": "完成独立控制台 README、验证记录、配置/回放/导出示例、API 概览、限制和后续扩展边界。",
+          "actions": [
+            "补充 experiment_console/README.md 的最小配置、回放、导出流程和 API 概览。",
+            "新增 experiment_console/docs/validation.md，记录静态验证、真实只读产物检查、依赖前提和未运行实验边界。",
+            "重新执行全量测试、Python/JavaScript 静态检查、计划校验和 git 工作区检查。"
+          ],
+          "files_changed": [
+            "experiment_console/README.md",
+            "experiment_console/docs/validation.md",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "python -m pytest -q experiment_console/tests",
+            "python -m compileall -q experiment_console/backend experiment_console/tests",
+            "node --check experiment_console/frontend/api.js",
+            "node --check experiment_console/frontend/replay.js",
+            "node --check experiment_console/frontend/app.js",
+            "python C:\\Users\\smile\\.codex\\skills\\create-plan-worklog\\scripts\\validate_worklog.py doc/plan/experiment_console_plan.json --mode update",
+            "git diff --name-only",
+            "git status --short"
+          ],
+          "results": [
+            "23 个测试通过；Python compileall、三个 JavaScript 语法检查和计划 update 校验通过。",
+            "README 已提供目录、依赖、启动、API、配置、回放、导出和限制说明。",
+            "validation.md 已记录未安装 FastAPI、未运行 Isaac Gym/CUDA/训练/评估/部署以及现有目录未修改。",
+            "工作区仅有新建 doc/ 和 experiment_console/ 内容，未出现既有目录跟踪文件改动。"
+          ],
+          "evidence": [
+            "pytest 输出为 23 passed。",
+            "计划校验输出为 VALID: doc\\plan\\experiment_console_plan.json (mode=update)。",
+            "git diff --name-only 无输出；git status 仅显示 doc/ 与 experiment_console/ 未跟踪目录。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        },
+        {
+          "timestamp": "2026-09-23T12:00:00+08:00",
+          "summary": "明确两个界面的职责并将独立训练控制台从 experiment_console/ 重命名为 training_console/。",
+          "actions": [
+            "保留 webui/ 作为由现有 GitHub Pages workflow 部署的项目展示网站。",
+            "将新实现目录重命名为 training_console/，并同步其包导入、运行设置、README 和仓库目录说明。",
+            "更新计划中的当前目标、交付路径和最终验收路径，历史工作记录保留原始路径作为审计记录。",
+            "运行控制台静态测试、Python 编译检查和 JavaScript 语法检查。"
+          ],
+          "files_changed": [
+            "README.md",
+            "training_console/",
+            "doc/plan/experiment_console_plan.json"
+          ],
+          "commands": [
+            "Move-Item experiment_console training_console",
+            "python -m pytest -q training_console/tests",
+            "python -m compileall -q training_console/backend training_console/tests",
+            "node --check training_console/frontend/api.js",
+            "node --check training_console/frontend/replay.js",
+            "node --check training_console/frontend/app.js"
+          ],
+          "results": [
+            "23 个静态/mock 测试通过。",
+            "Python 编译检查通过；JavaScript 语法检查无报错。",
+            "现有 webui/ 路径未修改，GitHub Pages workflow 仍以 webui/ 为部署源。"
+          ],
+          "evidence": [
+            "training_console/backend/settings.py 将控制台根目录解析到 training_console/。",
+            "README.md 分别说明 webui/ 和 training_console/ 的职责。",
+            "rg 检查确认 training_console/ 源码和说明中不再包含 experiment_console 标识。"
+          ],
+          "remaining_work": [],
+          "blockers": []
+        }
+      ],
+      "constraints_and_notes": [
+        "文档必须说明本地没有 Isaac Gym/CUDA 实验环境，因此只完成静态与 mock 验证。",
+        "文档必须明确现有代码未被修改、现有日志/checkpoint 未被覆盖。",
+        "三维实时仿真、远程训练、多用户权限等内容只能列为后续扩展，不得混入第一版验收。"
+      ],
+      "acceptance_criteria": [
+        "training_console/README.md 包含目录结构、依赖、启动方式、数据来源、API 概览和安全限制。",
+        "提供配置示例、回放数据示例和导出流程示例。",
+        "提供已知限制与后续扩展清单，并标注需要用户确认的事项。",
+        "计划中的所有任务均有独立验证证据，最终交付条件全部满足。"
+      ],
+      "verification_result": "交付文档、启动说明、配置/回放/导出示例、限制边界和验证记录已完成；全量 23 项测试、静态检查与计划校验通过。"
+    }
+  ],
+  "final_acceptance": [
+    "所有任务均为 true，且每项任务均有追加工作记录、验收证据和非空 verification_result。",
+    "全部前后端实现文件位于 training_console/，现有代码目录和现有 webui/ 未被修改。",
+    "控制台覆盖配置、训练状态/日志、指标查看、视频回放、二维轨迹回放和策略导出六类核心交互。",
+    "后端通过受控适配器读取现有产物或启动现有入口，不复制训练逻辑、不改变算法语义。",
+    "未运行本地 Isaac Gym、CUDA、训练、评估或真实机器人实验，且验证记录明确说明了这一点。",
+    "所有文件路径、进程操作、导出目录和错误状态均有安全边界和可追踪记录。",
+    "用户在实现前需要确认的技术路线、导出对象和配置边界均有明确结论。"
+  ]
+}

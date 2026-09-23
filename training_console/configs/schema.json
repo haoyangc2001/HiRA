@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Experiment Console Training Preset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task", "max_iterations", "num_envs", "seed", "rl_device"],
+  "properties": {
+    "task": {"type": "string", "enum": ["go2_high_level"]},
+    "resume": {"type": "boolean", "default": false},
+    "experiment_name": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[A-Za-z0-9._-]+$"},
+    "run_name": {"type": "string", "maxLength": 80, "pattern": "^[A-Za-z0-9._-]*$"},
+    "load_run": {"type": ["string", "null"], "maxLength": 160},
+    "checkpoint": {"type": ["integer", "null"], "minimum": 0},
+    "num_envs": {"type": "integer", "minimum": 1, "maximum": 4096},
+    "seed": {"type": "integer", "minimum": -1, "maximum": 2147483647},
+    "max_iterations": {"type": "integer", "minimum": 1, "maximum": 1000000},
+    "rl_device": {"type": "string", "pattern": "^(cpu|cuda(:[0-9]+)?)$"},
+    "low_level_model": {"type": ["string", "null"], "maxLength": 260},
+    "trajectory_root": {"type": ["string", "null"], "maxLength": 260},
+    "video_roots": {"type": "array", "maxItems": 8, "items": {"type": "string", "maxLength": 260}}
+  }
+}

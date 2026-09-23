@@ -1,0 +1,7 @@
+{
+  "checkpoint_path": "logs/high_level_go2/run/model_100.pt",
+  "num_trajs": 2,
+  "max_steps": 4,
+  "low_level_model": "logs/rough_go2/exported/policies/policy_1.pt",
+  "trajectories": [[[0, 0], [1, 0], [1, 1]], [[-1, 0], [-1, 2]]]
+}

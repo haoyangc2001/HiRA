@@ -1,0 +1,22 @@
+{
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "resource was not found",
+    "category": "not_found",
+    "details": {"resource": "trajectory"}
+  },
+  "train_status": {
+    "status": "idle",
+    "run_id": null,
+    "owner": "training_console",
+    "pid": null,
+    "exit_code": null
+  },
+  "export_status": {
+    "id": "export-fixture",
+    "status": "planned",
+    "kind": "high_level_actor",
+    "output_path": null,
+    "error": null
+  }
+}

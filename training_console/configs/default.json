@@ -1,0 +1,15 @@
+{
+  "task": "go2_high_level",
+  "resume": false,
+  "experiment_name": "high_level_go2",
+  "run_name": "console",
+  "load_run": null,
+  "checkpoint": null,
+  "num_envs": 1,
+  "seed": 1,
+  "max_iterations": 1,
+  "rl_device": "cpu",
+  "low_level_model": null,
+  "trajectory_root": null,
+  "video_roots": ["logs", "webui/assets"]
+}

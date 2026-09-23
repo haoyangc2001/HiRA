@@ -23,8 +23,11 @@ rsl_rl/           Reinforcement learning components
 isaacgym/          Isaac Gym dependencies and assets
 unitree_rl_gym/    Unitree robot training utilities
 webui/             Static project website for GitHub Pages
+training_console/  Standalone training configuration, monitoring, replay, and export console
 ALGORITHM_DESIGN.md  Algorithm design notes
 ```
+
+`webui/` is the public project website; `training_console/` is the separate local training interface.
 
 ## Status
 

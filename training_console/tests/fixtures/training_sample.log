@@ -1,0 +1,6 @@
+iter 00002 | success 0.20 | cost 40.0 | policy_loss -1.0e-03 | value_loss 2.0 | Vmean 1.0 | Rmean 3.0 | Vrmse 4.0 | VexpVar 0.5 | adv_std 0.7 | elapsed 12.00s
+iter 00001 | success 0.10 | cost 50.0 | policy_loss 0.001 | value_loss 3.0 | Vmean 0.0 | Rmean 2.0 | Vrmse 5.0 | VexpVar 0.1 | adv_std 0.8 | elapsed 10.00s
+iter 00002 | success 0.25 | cost 39.0 | policy_loss -0.002 | value_loss 1.5 | Vmean 1.5 | Rmean 3.5 | Vrmse 3.5 | VexpVar 0.6 | adv_std 0.6 | elapsed 13.00s
+iter 00003 | success 0.30 | cost 38.0 | policy_loss -0.002 | value_loss 1.4 | Vmean 1.6 | Rmean 3.6 | Vrmse 3.4 | VexpVar 0.7 | adv_std
+iter 00004 | success 0.35 | cost 37.0
+truncated tail without completed iteration

@@ -1,0 +1,10 @@
+{
+  "iteration": 42,
+  "success_rate": 0.75,
+  "execution_cost": 12.5,
+  "low_level_model_path": "logs/rough_go2/exported/policies/policy_1.pt",
+  "actor_critic": {
+    "actor.0.weight": [[0, 0, 0], [0, 0, 0]],
+    "actor.2.weight": [[0, 0], [0, 0], [0, 0]]
+  }
+}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>实验控制台</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar"><div><p class="eyebrow">GO2 / REACH-AVOID</p><h1>实验控制台</h1></div><span id="connection" class="status neutral">Mock 模式</span></header>
+  <nav class="tabs" aria-label="主导航"><button class="tab active" data-panel="training">训练</button><button class="tab" data-panel="replay">回放</button><button class="tab" data-panel="export">导出</button></nav>
+  <main>
+    <section id="training" class="panel active-panel">
+      <div class="section-heading"><div><p class="eyebrow">TRAINING</p><h2>运行配置</h2></div><div class="actions"><button id="validate-config">校验配置</button><button id="start-training" class="primary">开始 dry-run</button><button id="stop-training" class="danger" disabled>停止</button></div></div>
+      <div class="grid two"><form id="config-form" class="surface form-grid"><label>任务<select name="task"><option value="go2_high_level">go2_high_level</option></select></label><label>实验名称<input name="experiment_name" value="high_level_go2"></label><label>运行名称<input name="run_name" value="console"></label><label>环境数量<input name="num_envs" type="number" min="1" value="1"></label><label>随机种子<input name="seed" type="number" value="1"></label><label>最大迭代<input name="max_iterations" type="number" min="1" value="1"></label><label>设备<select name="rl_device"><option>cpu</option><option>cuda:0</option></select></label><label class="check"><input name="resume" type="checkbox"> 恢复训练</label></form><div class="surface status-surface"><div class="surface-title"><h3>运行状态</h3><span id="train-status" class="status neutral">idle</span></div><dl class="facts"><div><dt>Run ID</dt><dd id="run-id">未启动</dd></div><div><dt>进程</dt><dd id="process-id">-</dd></div><div><dt>最新迭代</dt><dd id="latest-iteration">-</dd></div></dl><div id="alert" class="alert" hidden></div></div></div>
+      <div class="grid two lower"><div class="surface"><div class="surface-title"><h3>指标摘要</h3><button id="refresh-metrics" class="icon-button" title="刷新指标">↻</button></div><div class="metric-grid"><div><span>成功率</span><strong id="success-rate">-</strong></div><div><span>执行成本</span><strong id="execution-cost">-</strong></div><div><span>策略损失</span><strong id="policy-loss">-</strong></div><div><span>值损失</span><strong id="value-loss">-</strong></div></div><div id="metric-empty" class="empty">选择实验后查看指标</div></div><div class="surface log-surface"><div class="surface-title"><h3>日志尾部</h3><span class="muted">只读</span></div><pre id="log-output">暂无日志</pre></div></div>
+    </section>
+    <section id="replay" class="panel"><div class="section-heading"><div><p class="eyebrow">REPLAY</p><h2>视频与轨迹</h2></div><button id="refresh-replay">刷新资源</button></div><div class="grid two"><div class="surface"><div class="surface-title"><h3>视频</h3><select id="video-select"><option value="">暂无视频</option></select></div><video id="video-player" controls preload="metadata"></video><p id="video-empty" class="empty">暂无受控视频资源</p></div><div class="surface"><div class="surface-title"><h3>二维轨迹</h3><div class="replay-actions"><select id="trajectory-select"><option value="">暂无轨迹</option></select><select id="speed-select"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></div></div><canvas id="trajectory-canvas" width="720" height="420"></canvas><div class="canvas-controls"><button id="replay-reset">重置</button><button id="replay-step-back">后退</button><button id="replay-play" class="primary">播放</button><button id="replay-step">单步</button><span id="frame-label" class="muted">0 / 0</span></div><p id="trajectory-empty" class="empty">暂无二维轨迹资源</p></div></div></section>
+    <section id="export" class="panel"><div class="section-heading"><div><p class="eyebrow">EXPORT</p><h2>策略导出</h2></div><button id="export-policy" class="primary">生成导出计划</button></div><div class="grid two"><div class="surface"><h3>导出范围</h3><p>高层导航 Actor</p><p class="muted">低层 locomotion 策略仅作为依赖展示。</p><label>Checkpoint<select id="checkpoint-select"><option value="">暂无 checkpoint</option></select></label></div><div class="surface"><div class="surface-title"><h3>导出状态</h3><span id="export-status" class="status neutral">idle</span></div><dl class="facts"><div><dt>Job ID</dt><dd id="export-id">-</dd></div><div><dt>输出</dt><dd id="export-path">-</dd></div></dl><a id="download-export" class="button-link" hidden>下载导出文件</a></div></div></section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
