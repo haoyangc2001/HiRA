@@ -1,6 +1,6 @@
 # HiRA: Hierarchical Reach-Avoid Navigation for Quadruped Robots
 
-[Project website](https://haoyangc2001.github.io/Go2HierarchicalReachAvoidRL/)
+[Project website](https://haoyangc2001.github.io/HiRA/)
 
 HiRA is a hierarchical quadruped navigation project based on **Reach-Avoid** learning. A high-level policy generates body-frame velocity commands to reach a goal while avoiding unsafe regions; a pretrained low-level locomotion policy executes those commands through joint control.
 
@@ -37,7 +37,7 @@ In this workspace, HiRA is an independent reference project for [CaMRA](../CaMRA
 
 ## Name and Repository
 
-The local project and folder are named **HiRA** (Hierarchical Reach-Avoid). The original GitHub repository name remains `Go2HierarchicalReachAvoidRL`; repository and GitHub Pages links retain that existing address until the remote repository is explicitly renamed. This folder retains its own Git history and remote, separate from the parent workspace.
+The project, local folder, and [GitHub repository](https://github.com/haoyangc2001/HiRA) are named **HiRA** (Hierarchical Reach-Avoid). The repository was originally named `Go2HierarchicalReachAvoidRL`; GitHub confirmed its new location during the rename synchronization. This folder retains its own Git history and remote, separate from the parent workspace.
 
 Python package names, task IDs, checkpoint names, and existing training records are retained for compatibility and traceability. Historical materials under `output/copyright_materials/` remain archived under their original terminology.
 
