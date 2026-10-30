@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="HD-MCRA: Hierarchical Minimum-Cost Reach-Avoid Learning for Safe Quadruped Navigation" />
-    <title>HD-MCRA | Academic Project Page Reference</title>
+    <meta name="description" content="HiRA: Hierarchical Reach-Avoid Navigation for Quadruped Robots" />
+    <title>HiRA | Academic Project Page Reference</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -22,8 +22,8 @@
   </head>
   <body>
     <header class="paper-header" id="top">
-      <h1>Hierarchical Minimum-Cost Reach-Avoid<br />Learning for Safe Quadruped Navigation</h1>
-      <p class="subtitle">面向复杂真实环境的预算感知、安全四足机器人自主导航</p>
+      <h1>HiRA: Hierarchical Reach-Avoid<br />Navigation for Quadruped Robots</h1>
+      <p class="subtitle">基于 Reach-Avoid 学习的四足机器人分层避障导航</p>
       <nav class="header-links" aria-label="Project navigation">
         <a href="#abstract">摘要</a>
         <a href="#problem">问题</a>
@@ -40,77 +40,70 @@
             <source src="../assets/agiro-demo.mp4" type="video/mp4" />
             您的浏览器不支持视频播放。
           </video>
-          <p class="media-caption" id="demo-title">AGIROS 实机演示：高层预算条件化导航策略输出速度命令，低层鲁棒速度跟踪策略完成闭环执行。</p>
+          <p class="media-caption" id="demo-title">四足机器人演示素材：通过速度指令接口连接高层导航与低层运动控制。</p>
         </div>
       </section>
 
       <section class="abstract-band reveal" id="abstract">
         <div class="prose">
           <h2>摘要</h2>
-          <p>复杂环境中的四足机器人导航需要同时满足目标到达、全程避障与执行成本最小化；</p>
-          <p>传统 Reward Weighting 将安全与效率退化为难以调节的偏好，CMDP 的固定成本阈值又难以刻画不同状态下的预算可行性。</p>
-          <p>我们将该任务统一建模为 <strong>Minimum-Cost Reach-Avoid（MCRA）</strong>问题：在增广状态中联合表示任务状态、安全演化与剩余预算，并以轨迹级约束显式定义“安全到达且不超支”。</p>
-          <p>在理论层面，HD-MCRA 分别学习可达-规避价值与累计成本价值，并以预算为条件训练高层策略：策略在可行区域内优先降低成本，在可行性受损时优先恢复安全到达能力。</p>
-          <p>在执行层面，冻结的鲁棒低层速度跟踪器将高维关节控制抽象为稳定的闭环速度接口，使 MCRA 能够在低维导航空间中学习与部署；由实测闭环数据估计的成本裕度 alpha 与安全裕度 delta，进一步补偿成本超支和轨迹偏移。</p>
-          <p>在困难 IsaacGym 场景中，HD-MCRA 相较传统方法将导航成功率提升约 <strong class="result">20%</strong>，执行成本降低约 <strong class="result">30%</strong>；AGIROS 实机展示验证了该方法在真实四足机器人上的闭环运行能力。</p>
+          <p>HiRA 将四足机器人导航建模为 <strong>Reach-Avoid</strong> 问题：学习到达目标，同时避免在到达前进入危险区域。</p>
+          <p>高层采用一个随机策略网络和一个 Reach-Avoid 评价网络，通过目标函数 g 与安全函数 h 构造多步学习目标，再使用 PPO 更新策略。</p>
+          <p>预训练并冻结的低层速度跟踪器接收三维速度命令，负责关节控制和步态执行。项目提供 Go2 策略文件、训练日志、轨迹采集及可视化工具。</p>
         </div>
       </section>
 
       <section class="prose reveal" id="problem">
         <h2>问题定义</h2>
-        <p>Reward Weighting 以奖励权重间接平衡到达、安全与效率，硬约束因而退化为需要反复调节的软偏好；</p>
-        <p>CMDP 依赖人工设定成本阈值，阈值过紧会阻碍可行解，过松又难以约束成本，场景变化时需要重新调节；</p>
-        <p>我们以增广状态统一表达目标、安全与预算，并把到达-规避直接作为轨迹级硬约束，而非由奖励或阈值间接塑造的偏好。</p>
-        <div class="formula" aria-label="Minimum-Cost Reach-Avoid optimization formulation">
+        <p>目标集合描述需要到达的位置，危险集合描述需要避开的区域；Reach-Avoid 将到达与全程避障共同纳入学习目标。</p>
+        <div class="formula" aria-label="Reach-Avoid task definition">
           \[
-          \begin{aligned}
-          \underset{\pi,\,T}{\operatorname{minimize}}\quad
-          & \mathbb{E}_{\pi}\!\left[\sum_{t=0}^{T-1} c(x_t, u_t)\right] \\
-          \text{subject to}\quad
-          & x_T \in \mathcal{G}, \\
-          & x_t \notin \mathcal{F}, \quad \forall\,t \in \{0, \ldots, T\}, \\
-          & \hat{x}_t=(x_t,y_t,z_t), \quad z_{t+1}=z_t-c(x_t,u_t), \quad z_t \geq 0.
-          \end{aligned}
+          \exists\,t\leq T:\quad x_t\in\mathcal{G},
+          \qquad x_\tau\notin\mathcal{F},\quad \forall\,\tau\in\{0,\ldots,t\}.
           \]
         </div>
       </section>
 
       <section class="prose reveal" id="method">
         <h2>训练方法</h2>
-        <p>HD-MCRA 通过四个相互连接的机制，将 MCRA 的轨迹级建模落到四足机器人的闭环控制中。</p>
+        <p>HiRA 通过导航观测、Reach-Avoid 价值学习、策略更新和分层执行连接感知与运动控制。</p>
       </section>
 
-      <section class="wide method-flow reveal" aria-label="HD-MCRA method flow">
+      <section class="wide method-flow reveal" aria-label="HiRA method flow">
         <article class="method-step">
           <span>01</span>
-          <h3>增广状态</h3>
-          <p>将任务进展、局部风险、剩余预算和执行偏差编入高层状态，使策略能看见安全与成本的共同边界。</p>
+          <h3>导航观测</h3>
+          <p>使用机器人朝向、机身速度、目标相对位置和障碍物方向编码构造高层观测。</p>
         </article>
         <div class="flow-arrow" aria-hidden="true">&darr;</div>
         <article class="method-step">
           <span>02</span>
-          <h3>Dual Critic</h3>
-          <p>Reachability Critic 估计安全可达性，Cost Critic 估计累计成本，避免两个目标被单一奖励混淆。</p>
+          <h3>Reach-Avoid Critic</h3>
+          <p>一个评价网络拟合由目标函数 g 和安全函数 h 共同定义的 Reach-Avoid 多步目标。</p>
         </article>
         <div class="flow-arrow" aria-hidden="true">&darr;</div>
         <article class="method-step">
           <span>03</span>
-          <h3>条件策略优化</h3>
-          <p>在可行区域优先降低成本，在不可行区域优先恢复或扩大可行性，输出低维速度命令。</p>
+          <h3>Reach-Avoid PPO</h3>
+          <p>策略根据 Reach-Avoid 优势进行 PPO 更新，输出前后、左右及转向三个速度分量。</p>
         </article>
         <div class="flow-arrow" aria-hidden="true">&darr;</div>
         <article class="method-step">
           <span>04</span>
           <h3>分层闭环执行</h3>
-          <p>低层以 PPO 与域随机化训练鲁棒速度跟踪，并把闭环偏差反馈为安全/成本裕度。</p>
+          <p>冻结的低层速度跟踪策略结合本体状态，将高层速度命令转换为 12 维关节动作。</p>
         </article>
       </section>
 
-      <section class="policy-visual reveal" aria-label="Feasibility-driven conditional policy">
-        <p>Reachability Critic 判断当前状态是否仍可安全到达目标；Cost Critic 评估累计成本与预算余量。预算条件策略据此切换优化重点：可行域内最小化成本，可行性受损时优先恢复安全到达能力。</p>
+      <section class="policy-visual reveal" aria-label="HiRA Reach-Avoid value target">
+        <p>评价网络的多步目标由目标到达、安全状态和后续价值共同构造；高层策略通过对应的优势信号学习速度指令。</p>
         <figure class="policy-figure">
-          <img src="assets/feasibility-driven-policy.png" alt="增广状态通过 Reachability Critic 与 Cost Critic 驱动预算条件策略，在不同可行性状态下输出不同高层速度命令的机制图" />
-          <figcaption>可行性驱动的条件策略：安全到达是硬约束；成本仅在可行域内优化。</figcaption>
+          <div class="formula">
+            \[
+            Q_t=\max\!\left(h_t,\min\!\left(g_t,\gamma V(s_{t+1})\right)\right).
+            \]
+          </div>
+          <figcaption>Reach-Avoid 单步候选目标；训练中进一步组合不同回溯深度的候选值。</figcaption>
         </figure>
       </section>
 
@@ -120,26 +113,26 @@
 
       <section class="result-stories reveal" aria-label="Results overview">
         <article>
-          <h3>导航成功率提升约 <strong>20%</strong></h3>
-          <p>在障碍密集、路径受限的困难 IsaacGym 场景中，HD-MCRA 更稳定地保持到达-规避可行性，相较传统方法将导航成功率提升约 20%。</p>
+          <h3>避障到达行为</h3>
+          <p>使用导航轨迹观察机器人在障碍物附近的运动和目标到达行为；训练指标保存在仓库日志中。</p>
           <figure>
             <img src="assets/navigation-success-sequence.jpg" alt="四足机器人在办公环境中连续避障的实机导航序列" />
-            <figcaption>安全导航方向：实机在办公环境中连续避开座椅等近距离障碍，并完成目标到达。</figcaption>
+            <figcaption>避障行为展示：四足机器人在座椅等障碍物之间运动。</figcaption>
           </figure>
         </article>
         <article>
-          <h3>平均执行成本降低约 <strong>30%</strong></h3>
-          <p>在存在多条可行路线的场景中，HD-MCRA 以剩余预算为条件选择更短、更低成本的轨迹，并使困难环境中的平均执行成本降低约 30%。</p>
+          <h3>多路径导航展示</h3>
+          <p>结合轨迹采集与俯视布局图，观察不同起点和通道条件下的导航路径。当前日志中的 cost 统计成功轨迹的首次到达步数。</p>
           <figure>
-            <img src="assets/cost-efficient-path-sequence.png" alt="四足机器人选择最短可行路径的实机序列" />
-            <figcaption>成本优化方向：在安全避障前提下，实机选择通过狭窄通道的高效可行路线。</figcaption>
+            <img src="assets/cost-efficient-path-sequence.png" alt="四足机器人通过障碍物间通道的演示序列" />
+            <figcaption>路径行为展示：四足机器人通过障碍物之间的可行通道。</figcaption>
           </figure>
         </article>
       </section>
     </main>
 
     <footer class="project-footer">
-      <a class="footer-mark" href="#top">HD-MCRA</a>
+      <a class="footer-mark" href="#top">HiRA</a>
       <nav aria-label="Footer navigation">
         <a href="#top">返回顶部</a>
         <a href="https://github.com/haoyangc2001/Go2HierarchicalReachAvoidRL" target="_blank" rel="noreferrer">GitHub 开源仓库</a>

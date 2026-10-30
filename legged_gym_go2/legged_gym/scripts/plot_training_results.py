@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Training Log Visualization Script for MCRA_RL Project
+Training Log Visualization Script for HiRA
 
 This script reads training log files from Reach-Avoid PPO training and generates
 visualization plots of training metrics over iterations.
@@ -368,7 +368,7 @@ def generate_summary_report(data, output_dir, log_file_name):
 def main():
     """Main function to parse arguments and generate plots."""
     parser = argparse.ArgumentParser(
-        description='Generate visualization plots from MCRA_RL training logs',
+        description='Generate visualization plots from HiRA training logs',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -382,7 +382,7 @@ Examples:
         'log_file',
         type=str,
         nargs='?',
-        default='/home/caohy/repositories/Go2HierarchicalRewardShapingRL/logs/high_level_go2_Reward_Shaping/成功率收敛0.55_成本收敛78/training.log',
+        default=str(Path(__file__).resolve().parents[3] / 'logs/high_level_go2/成功率收敛0.72_成本收敛79.1/training.log'),
         help='Path to the training log file',
     )
     parser.add_argument('--output-dir', type=str, help='Directory to save plots (default: same as log file)')

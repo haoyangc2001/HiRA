@@ -197,7 +197,7 @@ python deploy/deploy_real/deploy_real.py
 ## 与项目其他部分的关系
 
 ```
-Go2HierarchicalReachAvoidRL/
+HiRA/
 ├── legged_gym_go2/    ← 本目录：环境、训练、部署
 ├── rsl_rl/            ← Reach-Avoid PPO 算法（被 train_reach_avoid.py 调用）
 ├── isaacgym/          ← NVIDIA GPU 物理仿真（被 envs/base/ 使用）

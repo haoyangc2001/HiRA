@@ -91,7 +91,7 @@ def play(args):
         model_path = args.model_path
     else:
         # 首先尝试从用户指定的路径查找高层导航策略模型
-        custom_high_level_path = "/home/wutr/IsaacGym/logs/high_level_go2"
+        custom_high_level_path = os.path.join(os.path.dirname(LEGGED_GYM_ROOT_DIR), "logs", "high_level_go2")
         model_path = None
         
         if os.path.exists(custom_high_level_path):

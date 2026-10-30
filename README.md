@@ -1,19 +1,19 @@
-# HD-MCRA: Hierarchical Minimum-Cost Reach-Avoid Learning for Safe Quadruped Navigation
+# HiRA: Hierarchical Reach-Avoid Navigation for Quadruped Robots
 
 [Project website](https://haoyangc2001.github.io/Go2HierarchicalReachAvoidRL/)
 
-HD-MCRA studies budget-aware, safe navigation for quadruped robots in complex environments. The project formulates navigation as a **Minimum-Cost Reach-Avoid (MCRA)** problem: reach the goal, avoid unsafe states throughout the trajectory, and minimize cumulative execution cost under a remaining budget.
+HiRA is a hierarchical quadruped navigation project based on **Reach-Avoid** learning. A high-level policy generates body-frame velocity commands to reach a goal while avoiding unsafe regions; a pretrained low-level locomotion policy executes those commands through joint control.
 
 ## Key Ideas
 
-- **Trajectory-level MCRA formulation.** An augmented state represents task progress, safety evolution, and remaining budget together, treating reach-avoid as a hard constraint rather than a reward-weighted preference.
-- **Dual critics and budget-conditioned policy optimization.** A reachability critic estimates safe feasibility while a cost critic estimates cumulative execution cost. The high-level policy prioritizes cost reduction when feasible and feasibility recovery when safety or budget is at risk.
+- **Reach-Avoid learning.** Goal and safety functions, `g(s)` and `h(s)`, define the learning targets for navigation rather than a weighted sum of navigation rewards.
+- **Policy and value learning.** The current high-level training entry uses a stochastic policy and one Reach-Avoid critic, with a custom multi-step target and PPO updates.
 - **Hierarchical closed-loop control.** A robust frozen locomotion policy tracks low-dimensional velocity commands, allowing the high-level navigator to operate in a stable closed-loop action space instead of directly controlling high-dimensional joints.
-- **Data-driven robust margins.** Safety and cost margins, estimated from closed-loop data, compensate for trajectory deviations, cost overruns, and sim-to-real mismatch.
+- **Navigation evaluation.** The repository includes trained checkpoints, training logs, trajectory collection, visualization, and a standalone training console.
 
-## Results
+## Existing Artifacts
 
-In difficult Isaac Gym navigation environments, HD-MCRA improves navigation success by approximately **20%** and reduces average execution cost by approximately **30%** compared with conventional baselines. The system has also been demonstrated on an AGIROS quadruped robot.
+Go2 locomotion checkpoints and exported policies are included, alongside high-level navigation checkpoints and training logs. In the current training script, the logged `cost` is the mean first-arrival step index among successful trajectories; it is not a remaining-budget state or a separate cost critic objective. The website also contains demonstration media. Local availability of these files does not establish that they have been reproduced in the current environment.
 
 ## Repository Layout
 
@@ -27,11 +27,19 @@ training_console/  Standalone training configuration, monitoring, replay, and ex
 ALGORITHM_DESIGN.md  Algorithm design notes
 ```
 
-`webui/` is the public project website; `training_console/` is the separate local training interface.
+`webui/` is the project website; `training_console/` is the separate local training interface. Algorithm details and source entry points are described in [ALGORITHM_DESIGN.md](ALGORITHM_DESIGN.md).
 
 ## Status
 
-This repository contains the project implementation and its accompanying research website. Training and deployment requirements depend on the local Isaac Gym, CUDA, and robot software environment; release details will be updated as the project evolves.
+This repository uses Isaac Gym and the legged_gym / rsl_rl stack. Training and deployment require a compatible Python, CUDA, simulator, and robot software environment. Renaming the local folder does not migrate the implementation to Isaac Lab or change the trained policies.
+
+In this workspace, HiRA is an independent reference project for [CaMRA](../CaMRA/README.md). The current HiRA training path does not implement CaMRA's budget-conditioned dual-critic learning or execution-data calibration of cost and geometry margins.
+
+## Name and Repository
+
+The local project and folder are named **HiRA** (Hierarchical Reach-Avoid). The original GitHub repository name remains `Go2HierarchicalReachAvoidRL`; repository and GitHub Pages links retain that existing address until the remote repository is explicitly renamed. This folder retains its own Git history and remote, separate from the parent workspace.
+
+Python package names, task IDs, checkpoint names, and existing training records are retained for compatibility and traceability. Historical materials under `output/copyright_materials/` remain archived under their original terminology.
 
 ## Acknowledgements
 

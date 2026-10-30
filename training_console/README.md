@@ -1,6 +1,6 @@
-# 独立训练控制台
+# HiRA 训练控制台
 
-这是一个与仓库现有 `webui/`、训练代码和产物隔离的 FastAPI + 原生 HTML/CSS/JavaScript 控制台。第一版覆盖配置校验、dry-run 训练控制、日志/指标读取、视频发现、二维轨迹 Canvas 回放和高层导航 Actor 导出计划。
+这是 HiRA 项目的独立训练控制台，采用 FastAPI + 原生 HTML/CSS/JavaScript，与仓库现有 `webui/`、训练代码和产物隔离。第一版覆盖配置校验、dry-run 训练控制、日志/指标读取、视频发现、二维轨迹 Canvas 回放和高层导航 Actor 导出计划。
 
 ## 目录
 

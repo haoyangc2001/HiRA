@@ -26,7 +26,7 @@ def create_app(repository_root: str | Path | None = None):
     services = ConsoleServices(settings)
     config_service = ConfigService(settings.config_root)
     process_manager = ProcessManager(settings)
-    app = FastAPI(title="Experiment Console", version="0.1.0")
+    app = FastAPI(title="HiRA Experiment Console", version="0.1.0")
 
     @app.exception_handler(ConsoleError)
     async def handle_console_error(_request: Request, exc: ConsoleError):

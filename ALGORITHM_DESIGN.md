@@ -1,4 +1,4 @@
-# Reach-Avoid PPO Algorithm Design
+# HiRA: Reach-Avoid PPO Algorithm Design
 
 ## 摘要
 本项目将 Go2 高层导航建模为一个带安全约束的 Reach-Avoid 决策问题。与标准 PPO 直接最大化累计奖励不同，这里的训练信号由目标函数 `g(s)` 与安全函数 `h(s)` 共同定义，并通过 Reach-Avoid 价值目标驱动策略网络与价值网络同步更新。对应实现主要位于 `rsl_rl/rsl_rl/algorithms/reach_avoid_ppo.py`、`rsl_rl/rsl_rl/modules/actor_critic.py` 和 `legged_gym_go2/legged_gym/scripts/train_reach_avoid.py`。

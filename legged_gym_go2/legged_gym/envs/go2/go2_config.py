@@ -1,4 +1,8 @@
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
+from legged_gym import LEGGED_GYM_ROOT_DIR
+from pathlib import Path
+
+_HIRA_ROOT = Path(LEGGED_GYM_ROOT_DIR).parent
 
 class GO2RoughCfg( LeggedRobotCfg ):
     class env:
@@ -176,7 +180,7 @@ class GO2RoughCfgPPO( LeggedRobotCfgPPO ):
         experiment_name = 'rough_go2'
         save_interval = 500 # check for potential saves every this many iterations
         resume = True
-        resume_path = "/home/wutr/IsaacGym/legged_gym_go2/logs/rough_go2/Sep08_11-57-26_/model_18500.pt" # updated from load_run and chkpt
+        resume_path = str(_HIRA_ROOT / "logs/rough_go2/Sep08_11-57-26_/model_18500.pt")
 
 
 class GO2HighLevelCfg(GO2RoughCfg):
@@ -211,9 +215,9 @@ class GO2HighLevelCfgPPO(LeggedRobotCfgPPO):
         save_interval = 100
         # gh_dump_interval = 50  # iteration interval for dumping g/h tensors
         resume = False
-        resume_path = "/home/caohy/repositories/MCRA_RL/legged_gym_go2/legged_gym/scripts/logs/high_level_go2/20260105-102613/model_1300.pt"  # 你的checkpoint路径
+        resume_path = str(_HIRA_ROOT / "logs/high_level_go2/成功率收敛0.72_成本收敛79.1/model_1300.pt")
         # 底层策略模型路径
-        low_level_model_path = "/home/caohy/repositories/Go2HierarchicalReachAvoidRL/logs/rough_go2/Sep08_11-57-26_/model_18500.pt"
+        low_level_model_path = str(_HIRA_ROOT / "logs/rough_go2/Sep08_11-57-26_/model_18500.pt")
 
 _base_high_level_obs = 8
 _target_dim = GO2HighLevelCfg.target_lidar_num_bins

@@ -1,8 +1,8 @@
-# HD-MCRA Academic Project Page Reference
+# HiRA Academic Project Page Reference
 
 ## 1. Visual Theme & Atmosphere
 
-An academic project page inspired by the information hierarchy of the Academic Project Astro Template: calm, paper-like, media-led, and easy to scan. It presents HD-MCRA as a research contribution rather than a product landing page.
+An academic project page inspired by the information hierarchy of the Academic Project Astro Template: calm, paper-like, media-led, and easy to scan. It presents HiRA as a research contribution rather than a product landing page.
 
 ## 2. Color Palette & Roles
 
